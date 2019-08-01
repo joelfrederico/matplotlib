@@ -542,9 +542,9 @@ class FigureManagerQT(FigureManagerBase):
         image = str(cbook._get_data_path('images/matplotlib.svg'))
         self.window.setWindowIcon(QtGui.QIcon(image))
         if sys.platform == "darwin":
-            from . import _macos_helpers
-            image = str(cbook._get_data_path('images/matplotlib.pdf'))
-            _macos_helpers.set_mac_icon(image)
+            from matplotlib.backends import _macosx
+            pdf_icon = str(cbook._get_data_path('images/matplotlib.pdf'))
+            _macosx.set_icon(pdf_icon)
 
         # Give the keyboard focus to the figure instead of the
         # manager; StrongFocus accepts both tab and click to focus and

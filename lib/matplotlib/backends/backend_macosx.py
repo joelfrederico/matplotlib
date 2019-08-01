@@ -8,7 +8,6 @@ from matplotlib.backend_bases import (
     TimerBase)
 from matplotlib.figure import Figure
 from matplotlib.widgets import SubplotTool
-from . import _macos_helpers
 
 
 ########################################################################
@@ -62,7 +61,7 @@ class FigureCanvasMac(_macosx.FigureCanvas, FigureCanvasAgg):
         width, height = self.get_width_height()
         _macosx.FigureCanvas.__init__(self, width, height)
         image = str(cbook._get_data_path('images/matplotlib.pdf'))
-        _macos_helpers.set_mac_icon(image)
+        _macosx.set_icon(image)
         self._device_scale = 1.0
 
     def _set_device_scale(self, value):
