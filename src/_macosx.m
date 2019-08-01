@@ -216,7 +216,6 @@ static PyObject* set_icon(PyObject* ignored, PyObject* path)
     }
     @catch (NSException *e)
     {
-
         PyErr_SetString(PyExc_RuntimeError, "could not load icon");
         [pool drain];
         return NULL;
