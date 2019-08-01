@@ -195,7 +195,7 @@ static PyObject* set_icon(PyObject* ignored, PyObject* path)
     NSString* path_nsstring;
     @try
     {
-        // Copies path_buffer to path_nsstring, safe to Py_DECREF(path_buffer)
+        // Copies path_buffer to path_nsstring, safe to Py_DECREF(path_bytes)
         path_nsstring =
             [[NSString alloc] initWithUTF8String: path_buffer];
     }
