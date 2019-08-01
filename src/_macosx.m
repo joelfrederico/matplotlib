@@ -235,37 +235,6 @@ static PyObject* set_icon(PyObject* ignored, PyObject* path)
     Py_RETURN_NONE;
 }
 
-static PyObject* _get_pdf_icon_path(void)
-{
-    PyObject* cbook = PyImport_ImportModule("matplotlib.cbook");
-    if (!cbook)
-    {
-        return NULL;
-    }
-    PyObject* path = PyObject_CallMethod(cbook, "_get_data_path", "s",
-            "images/matplotlib.pdf");
-    Py_DECREF(cbook);
-    return path;
-}
-
-static int _set_icon(void)
-{
-    PyObject* pdf_path = _get_pdf_icon_path();
-    if (!pdf_path)
-    {
-        return -1;
-    }
-    PyObject* result = set_icon(NULL, Py_BuildValue("(N)", pdf_path));
-    if (!result)
-    {
-        Py_DECREF(pdf_path);
-        return -1;
-    }
-    Py_DECREF(pdf_path);
-    Py_DECREF(result);
-    return 0;
-}
-
 /* ---------------------------- Cocoa classes ---------------------------- */
 
 @interface WindowServerConnectionManager : NSObject
@@ -825,10 +794,6 @@ FigureManager_init(FigureManager *self, PyObject *args, PyObject *kwds)
     rect.origin.y = 350;
     rect.size.height = height;
     rect.size.width = width;
-    if (_set_icon() != 0)
-    {
-        return -1;
-    }
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     self->window = [self->window initWithContentRect: rect
                                          styleMask: NSTitledWindowMask
@@ -841,7 +806,6 @@ FigureManager_init(FigureManager *self, PyObject *args, PyObject *kwds)
     window = self->window;
     [window setTitle: [NSString stringWithCString: title
                                          encoding: NSASCIIStringEncoding]];
-
     [window setAcceptsMouseMovedEvents: YES];
     [window setDelegate: view];
     [window makeFirstResponder: view];
