@@ -180,37 +180,37 @@ static int wait_for_stdin(void)
 
 static PyObject* set_icon(PyObject* ignored, PyObject* path)
 {
-    if (!path)
-    {
-        PyErr_SetString(PyExc_RuntimeError, "No path passed");
-        return NULL;
-    }
-
-    const char* path_string;
-    PyObject* unicode_path = PyObject_Str(path);
-    if (!unicode_path)
+    PyObject* path_bytes;
+    if (!PyArg_ParseTuple(path, "O&", &PyUnicode_FSConverter, &path_bytes))
     {
         return NULL;
     }
-
-    // API indicates Python owns path_string; we don't need to free it
-    path_string = PyUnicode_AsUTF8(unicode_path);
-    Py_DECREF(unicode_path);
-    if (!path_string)
+    char* path_buffer = PyBytes_AsString(path_bytes);
+    if (!path_buffer)
     {
-        PyErr_SetString(PyExc_TypeError, "bad argument type, must be "
-                "convertible to UTF-8");
+        Py_DECREF(path_bytes);
         return NULL;
     }
-
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-    NSImage* image;
+    NSString* path_nsstring;
     @try
     {
-        NSString* path_nsstring =
-            [[NSString alloc] initWithUTF8String: path_string];
-
+        // Copies path_buffer to path_nsstring, safe to Py_DECREF(path_buffer)
+        path_nsstring =
+            [[NSString alloc] initWithUTF8String: path_buffer];
+    }
+    @catch (NSException *e)
+    {
+        // This should never happen
+        PyErr_SetString(PyExc_RuntimeError, "invalid input");
+        return NULL;
+    }
+    @finally
+    {
+        Py_DECREF(path_bytes);
+    }
+    NSImage* image;
+    @try{
         image =
             [[NSImage alloc] initByReferencingFile: path_nsstring];
     }
@@ -221,7 +221,6 @@ static PyObject* set_icon(PyObject* ignored, PyObject* path)
         [pool drain];
         return NULL;
     }
-
     @try
     {
         NSApplication* app = [NSApplication sharedApplication];
@@ -233,7 +232,6 @@ static PyObject* set_icon(PyObject* ignored, PyObject* path)
         [pool drain];
         return NULL;
     }
-
     [pool drain];
     Py_RETURN_NONE;
 }
@@ -245,11 +243,9 @@ static PyObject* _get_pdf_icon_path(void)
     {
         return NULL;
     }
-
     PyObject* path = PyObject_CallMethod(cbook, "_get_data_path", "s",
             "images/matplotlib.pdf");
     Py_DECREF(cbook);
-
     return path;
 }
 
@@ -260,14 +256,12 @@ static int _set_icon(void)
     {
         return -1;
     }
-
-    PyObject* result = set_icon(NULL, pdf_path);
+    PyObject* result = set_icon(NULL, Py_BuildValue("(N)", pdf_path));
     if (!result)
     {
         Py_DECREF(pdf_path);
         return -1;
     }
-
     Py_DECREF(pdf_path);
     Py_DECREF(result);
     return 0;
@@ -832,14 +826,11 @@ FigureManager_init(FigureManager *self, PyObject *args, PyObject *kwds)
     rect.origin.y = 350;
     rect.size.height = height;
     rect.size.width = width;
-
     if (_set_icon() != 0)
     {
         return -1;
     }
-
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
     self->window = [self->window initWithContentRect: rect
                                          styleMask: NSTitledWindowMask
                                                   | NSClosableWindowMask
@@ -856,9 +847,7 @@ FigureManager_init(FigureManager *self, PyObject *args, PyObject *kwds)
     [window setDelegate: view];
     [window makeFirstResponder: view];
     [[window contentView] addSubview: view];
-
-
-    [pool release];
+    [pool drain];
     return 0;
 }
 
@@ -2729,7 +2718,7 @@ static struct PyMethodDef methods[] = {
    },
    {"set_icon",
     set_icon,
-    METH_O,
+    METH_VARARGS,
     "Sets the Dock icon in macOS"
    },
    {NULL, NULL, 0, NULL} /* sentinel */
