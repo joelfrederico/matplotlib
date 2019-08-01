@@ -178,59 +178,6 @@ static int wait_for_stdin(void)
     return 1;
 }
 
-PyObject* _get_pdf_icon_path(void)
-{
-    PyObject* mpl = PyImport_ImportModule("matplotlib");
-    if (!mpl)
-    {
-        return NULL;
-    }
-
-    PyObject* get_data_path = PyObject_GetAttrString(mpl, "get_data_path");
-    if (!get_data_path)
-    {
-        Py_DECREF(mpl);
-        return NULL;
-    }
-
-    PyObject* arg = PyTuple_New(0);
-    if (!arg)
-    {
-        Py_DECREF(mpl);
-        Py_DECREF(get_data_path);
-        return NULL;
-    }
-
-    PyObject* path = PyObject_Call(get_data_path, arg, NULL);
-    if (!path)
-    {
-        Py_DECREF(mpl);
-        Py_DECREF(get_data_path);
-        Py_DECREF(arg);
-        return NULL;
-    }
-
-    PyObject* pdf_rel = PyUnicode_FromString("/images/matplotlib.pdf");
-    if (!pdf_rel)
-    {
-        Py_DECREF(mpl);
-        Py_DECREF(get_data_path);
-        Py_DECREF(arg);
-        Py_DECREF(path);
-        return NULL;
-    }
-
-    PyObject* pdf_absolute = PyUnicode_Concat(path, pdf_rel);
-
-    Py_DECREF(mpl);
-    Py_DECREF(get_data_path);
-    Py_DECREF(arg);
-    Py_DECREF(path);
-    Py_DECREF(pdf_rel);
-
-    return pdf_absolute;
-}
-
 static PyObject* set_icon(PyObject* ignored, PyObject* path)
 {
     if (!path)
@@ -289,6 +236,21 @@ static PyObject* set_icon(PyObject* ignored, PyObject* path)
 
     [pool drain];
     Py_RETURN_NONE;
+}
+
+static PyObject* _get_pdf_icon_path(void)
+{
+    PyObject* cbook = PyImport_ImportModule("matplotlib.cbook");
+    if (!cbook)
+    {
+        return NULL;
+    }
+
+    PyObject* path = PyObject_CallMethod(cbook, "_get_data_path", "s",
+            "images/matplotlib.pdf");
+    Py_DECREF(cbook);
+
+    return path;
 }
 
 static int _set_icon(void)
@@ -838,7 +800,7 @@ FigureManager_init(FigureManager *self, PyObject *args, PyObject *kwds)
     View* view;
     const char* title;
     PyObject* size;
-    int width, height, result;
+    int width, height;
     PyObject* obj;
     FigureCanvas* canvas;
 
@@ -871,12 +833,12 @@ FigureManager_init(FigureManager *self, PyObject *args, PyObject *kwds)
     rect.size.height = height;
     rect.size.width = width;
 
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
     if (_set_icon() != 0)
     {
         return -1;
     }
+
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
     self->window = [self->window initWithContentRect: rect
                                          styleMask: NSTitledWindowMask
