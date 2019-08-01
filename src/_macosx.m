@@ -239,13 +239,20 @@ static PyObject* set_icon(PyObject* ignored, PyObject* path)
         return NULL;
     }
 
-    Py_ssize_t size;
+    const char* path_string;
+    PyObject* unicode_path = PyObject_Str(path);
+    if (!unicode_path)
+    {
+        return NULL;
+    }
+
     // API indicates Python owns path_string; we don't need to free it
-    const char* path_string = PyUnicode_AsUTF8AndSize(path, &size);
+    path_string = PyUnicode_AsUTF8(unicode_path);
+    Py_DECREF(unicode_path);
     if (!path_string)
     {
-        PyErr_SetString(PyExc_TypeError, "bad argument type, must be UTF-8 "
-                "path to icon");
+        PyErr_SetString(PyExc_TypeError, "bad argument type, must be "
+                "convertible to UTF-8");
         return NULL;
     }
 
