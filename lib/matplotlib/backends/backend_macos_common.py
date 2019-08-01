@@ -5,5 +5,6 @@ if sys.platform != "darwin":
         pass
 else:
     from . import _macosx
+
     def set_mac_icon(path):
         _macosx.set_icon(path)
